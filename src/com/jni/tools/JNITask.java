@@ -682,9 +682,12 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 
 		private void getAllJNIClasses(Iterable<? extends TypeElement> classes, Set<TypeElement> allClasses) {
 			for (TypeElement clazz : classes) {
-				Annotation jniclass = clazz.getAnnotation(JNIClass.class);
-				if (jniclass != null)
+				Annotation annotation = clazz.getAnnotation(JNIClass.class);
+				if (annotation != null)
 				{
+					JNIClass jniclass = (JNIClass) annotation;
+					String namespace = jniclass.value();
+
 					allClasses.add(clazz);
 					getAllJNIClasses(ElementFilter.typesIn(clazz.getEnclosedElements()), allClasses);
 				}
