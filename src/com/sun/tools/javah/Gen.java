@@ -228,20 +228,20 @@ public abstract class Gen {
 		}
 	}
 
-	protected String defineForStatic(TypeElement c, VariableElement f) throws Util.Exit {
-		CharSequence cnamedoc = c.getQualifiedName();
-		CharSequence fnamedoc = f.getSimpleName();
+	protected String defineForStatic(TypeElement clazz, VariableElement field) throws Util.Exit {
+		CharSequence cnamedoc = clazz.getQualifiedName();
+		CharSequence fnamedoc = field.getSimpleName();
 
 		String cname = mangler.mangle(cnamedoc, Mangle.Type.CLASS);
 		String fname = mangler.mangle(fnamedoc, Mangle.Type.FIELDSTUB);
 
-		if (!f.getModifiers().contains(Modifier.STATIC))
+		if (!field.getModifiers().contains(Modifier.STATIC))
 			util.bug("tried.to.define.non.static");
 
-		if (f.getModifiers().contains(Modifier.FINAL)) {
+		if (field.getModifiers().contains(Modifier.FINAL)) {
 			Object value = null;
 
-			value = f.getConstantValue();
+			value = field.getConstantValue();
 
 			if (value != null) { /* so it is a ConstantExpression */
 				String constString = null;

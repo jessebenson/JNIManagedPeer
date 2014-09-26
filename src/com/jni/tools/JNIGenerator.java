@@ -58,10 +58,10 @@ public class JNIGenerator extends Gen {
 			/* Write statics. */
 			List<VariableElement> classfields = getAllFields(clazz);
 
-			for (VariableElement v : classfields) {
-				if (!v.getModifiers().contains(Modifier.STATIC))
+			for (VariableElement field : classfields) {
+				if (!field.getModifiers().contains(Modifier.STATIC))
 					continue;
-				String s = defineForStatic(clazz, v);
+				String s = defineForStatic(clazz, field);
 				if (s != null) {
 					pw.println(s);
 				}
