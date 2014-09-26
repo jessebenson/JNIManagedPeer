@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.lang.annotation.Annotation;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,6 +65,7 @@ import javax.tools.ToolProvider;
 
 import static javax.tools.Diagnostic.Kind.*;
 
+import com.jni.annotation.JNIClass;
 import com.sun.tools.javac.code.Symbol.CompletionFailure;
 import com.sun.tools.javac.main.CommandLine;
 import com.sun.tools.javah.Gen;
@@ -652,7 +654,7 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 
 		public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
 			try {
-				Set<TypeElement> classes = getAllClasses(ElementFilter.typesIn(roundEnv.getRootElements()));
+				Set<TypeElement> classes = getAllJNIClasses(ElementFilter.typesIn(roundEnv.getRootElements()));
 				if (classes.size() > 0) {
 					checkMethodParameters(classes);
 					mGenerator.setProcessingEnvironment(processingEnv);
@@ -672,16 +674,20 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 			return true;
 		}
 
-		private Set<TypeElement> getAllClasses(Set<? extends TypeElement> classes) {
+		private Set<TypeElement> getAllJNIClasses(Set<? extends TypeElement> classes) {
 			Set<TypeElement> allClasses = new LinkedHashSet<TypeElement>();
-			getAllClasses0(classes, allClasses);
+			getAllJNIClasses(classes, allClasses);
 			return allClasses;
 		}
 
-		private void getAllClasses0(Iterable<? extends TypeElement> classes, Set<TypeElement> allClasses) {
-			for (TypeElement c : classes) {
-				allClasses.add(c);
-				getAllClasses0(ElementFilter.typesIn(c.getEnclosedElements()),allClasses);
+		private void getAllJNIClasses(Iterable<? extends TypeElement> classes, Set<TypeElement> allClasses) {
+			for (TypeElement clazz : classes) {
+				Annotation jniclass = clazz.getAnnotation(JNIClass.class);
+				if (jniclass != null)
+				{
+					allClasses.add(clazz);
+					getAllJNIClasses(ElementFilter.typesIn(clazz.getEnclosedElements()), allClasses);
+				}
 			}
 		}
 
