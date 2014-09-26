@@ -145,18 +145,6 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 		}
 	},
 
-	new HiddenOption(true, "-td") {
-		void process(JNITask task, String opt, String arg) {
-			// ignored; for backwards compatibility
-		}
-	},
-
-	new HiddenOption(false, "-stubs") {
-		void process(JNITask task, String opt, String arg) {
-			// ignored; for backwards compatibility
-		}
-	},
-
 	new Option(false, "-v", "-verbose") {
 		void process(JNITask task, String opt, String arg) {
 			task.verbose = true;
@@ -196,12 +184,6 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 	new HiddenOption(false, "-Xnew") {
 		void process(JNITask task, String opt, String arg) {
 			// we're already using the new javah
-		}
-	},
-
-	new HiddenOption(false, "-old") {
-		void process(JNITask task, String opt, String arg) {
-			task.old = true;
 		}
 	},
 
@@ -621,7 +603,6 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 	boolean version;
 	boolean fullVersion;
 	boolean force;
-	boolean old;
 	Set<String> javac_extras = new LinkedHashSet<String>();
 
 	PrintWriter log;
