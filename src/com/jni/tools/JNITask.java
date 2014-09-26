@@ -134,13 +134,7 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 	}
 
 	static Option[] recognizedOptions = {
-			
-		new Option(true, "-o") {
-			void process(JNITask task, String opt, String arg) {
-				task.ofile = new File(arg);
-			}
-		},
-	
+
 		new Option(true, "-d") {
 			void process(JNITask task, String opt, String arg) {
 				task.odir = new File(arg);
@@ -323,8 +317,8 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 			throw new BadArgs("err.no.classes.specified");
 		}
 
-		if (odir != null && ofile != null)
-			throw new BadArgs("dir.file.mixed");
+		if (odir == null)
+			throw new BadArgs("err.no.dir.specified");
 	}
 
 	private void handleOption(String name, Iterator<String> rest) throws BadArgs {
@@ -385,41 +379,30 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 
 		Gen generator = new JNIGenerator(util);
 
-		if (ofile != null) {
+		if (odir != null) {
 			if (!(fileManager instanceof StandardJavaFileManager)) {
-				diagnosticListener.report(createDiagnostic("err.cant.use.option.for.fm", "-o"));
+				diagnosticListener.report(createDiagnostic("err.cant.use.option.for.fm", "-d"));
 				return false;
 			}
 
-			Iterable<? extends JavaFileObject> iter = ((StandardJavaFileManager) fileManager).getJavaFileObjectsFromFiles(Collections.singleton(ofile));
-			JavaFileObject fo = iter.iterator().next();
-			generator.setOutFile(fo);
-		} else {
-			if (odir != null) {
-				if (!(fileManager instanceof StandardJavaFileManager)) {
-					diagnosticListener.report(createDiagnostic("err.cant.use.option.for.fm", "-d"));
-					return false;
-				}
-
-				if (!odir.exists()) {
-					if (!odir.mkdirs())
-						util.error("cant.create.dir", odir.toString());
-				}
-
-				try {
-					((StandardJavaFileManager) fileManager).setLocation(StandardLocation.CLASS_OUTPUT, Collections.singleton(odir));
-				} catch (IOException e) {
-					Object msg = e.getLocalizedMessage();
-					if (msg == null) {
-						msg = e;
-					}
-
-					diagnosticListener.report(createDiagnostic("err.ioerror", odir, msg));
-					return false;
-				}
+			if (!odir.exists()) {
+				if (!odir.mkdirs())
+					util.error("cant.create.dir", odir.toString());
 			}
-			generator.setFileManager(fileManager);
+
+			try {
+				((StandardJavaFileManager) fileManager).setLocation(StandardLocation.CLASS_OUTPUT, Collections.singleton(odir));
+			} catch (IOException e) {
+				Object msg = e.getLocalizedMessage();
+				if (msg == null) {
+					msg = e;
+				}
+
+				diagnosticListener.report(createDiagnostic("err.ioerror", odir, msg));
+				return false;
+			}
 		}
+		generator.setFileManager(fileManager);
 
 		/*
 		 * Force set to false will turn off smarts about checking file content
@@ -470,8 +453,7 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 		for (Option option : recognizedOptions) {
 			if (option.isHidden())
 				continue;
-			String name = option.aliases[0].substring(1); // there must always be at
-														// least one name
+			String name = option.aliases[0].substring(1); // there must always be at least one name
 			log.println(getMessage("main.opt." + name));
 		}
 
@@ -586,10 +568,7 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 		}
 	}
 
-	File ofile;
 	File odir;
-	String bootcp;
-	String usercp;
 	List<String> classes;
 	boolean verbose;
 	boolean noArgs;

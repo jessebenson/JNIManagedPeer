@@ -32,7 +32,6 @@ import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.MissingResourceException;
 import javax.tools.Diagnostic;
-import javax.tools.Diagnostic.Kind;
 import javax.tools.DiagnosticListener;
 import javax.tools.JavaFileObject;
 

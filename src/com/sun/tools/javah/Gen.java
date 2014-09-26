@@ -51,7 +51,6 @@ import javax.lang.model.util.Types;
 
 import javax.tools.FileObject;
 import javax.tools.JavaFileManager;
-import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
 
 /**
@@ -109,14 +108,9 @@ public abstract class Gen {
 	 * Output location.
 	 */
 	protected JavaFileManager fileManager;
-	protected JavaFileObject outFile;
 
 	public void setFileManager(JavaFileManager fm) {
 		fileManager = fm;
-	}
-
-	public void setOutFile(JavaFileObject outFile) {
-		this.outFile = outFile;
 	}
 
 	public void setClasses(Set<TypeElement> classes) {
