@@ -133,69 +133,72 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 		}
 	}
 
-	static Option[] recognizedOptions = { new Option(true, "-o") {
-		void process(JNITask task, String opt, String arg) {
-			task.ofile = new File(arg);
-		}
-	},
-
-	new Option(true, "-d") {
-		void process(JNITask task, String opt, String arg) {
-			task.odir = new File(arg);
-		}
-	},
-
-	new Option(false, "-v", "-verbose") {
-		void process(JNITask task, String opt, String arg) {
-			task.verbose = true;
-		}
-	},
-
-	new Option(false, "-h", "-help", "--help", "-?") {
-		void process(JNITask task, String opt, String arg) {
-			task.help = true;
-		}
-	},
-
-	new HiddenOption(false, "-trace") {
-		void process(JNITask task, String opt, String arg) {
-			task.trace = true;
-		}
-	},
-
-	new Option(false, "-version") {
-		void process(JNITask task, String opt, String arg) {
-			task.version = true;
-		}
-	},
-
-	new HiddenOption(false, "-fullversion") {
-		void process(JNITask task, String opt, String arg) {
-			task.fullVersion = true;
-		}
-	},
-
-	new Option(false, "-force") {
-		void process(JNITask task, String opt, String arg) {
-			task.force = true;
-		}
-	},
-
-	new HiddenOption(false, "-Xnew") {
-		void process(JNITask task, String opt, String arg) {
-			// we're already using the new javah
-		}
-	},
-
-	new HiddenOption(false) {
-		boolean matches(String opt) {
-			return opt.startsWith("-XD");
-		}
-
-		void process(JNITask task, String opt, String arg) {
-			task.javac_extras.add(opt);
-		}
-	}, };
+	static Option[] recognizedOptions = {
+			
+		new Option(true, "-o") {
+			void process(JNITask task, String opt, String arg) {
+				task.ofile = new File(arg);
+			}
+		},
+	
+		new Option(true, "-d") {
+			void process(JNITask task, String opt, String arg) {
+				task.odir = new File(arg);
+			}
+		},
+	
+		new Option(false, "-v", "-verbose") {
+			void process(JNITask task, String opt, String arg) {
+				task.verbose = true;
+			}
+		},
+	
+		new Option(false, "-h", "-help", "--help", "-?") {
+			void process(JNITask task, String opt, String arg) {
+				task.help = true;
+			}
+		},
+	
+		new HiddenOption(false, "-trace") {
+			void process(JNITask task, String opt, String arg) {
+				task.trace = true;
+			}
+		},
+	
+		new Option(false, "-version") {
+			void process(JNITask task, String opt, String arg) {
+				task.version = true;
+			}
+		},
+	
+		new HiddenOption(false, "-fullversion") {
+			void process(JNITask task, String opt, String arg) {
+				task.fullVersion = true;
+			}
+		},
+	
+		new Option(false, "-force") {
+			void process(JNITask task, String opt, String arg) {
+				task.force = true;
+			}
+		},
+	
+		new HiddenOption(false, "-Xnew") {
+			void process(JNITask task, String opt, String arg) {
+				// we're already using the new javah
+			}
+		},
+	
+		new HiddenOption(false) {
+			boolean matches(String opt) {
+				return opt.startsWith("-XD");
+			}
+	
+			void process(JNITask task, String opt, String arg) {
+				task.javac_extras.add(opt);
+			}
+		},
+	};
 
 	JNITask() {
 	}
