@@ -430,17 +430,17 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 		if (fileManager instanceof JNIFileManager)
 			((JNIFileManager) fileManager).setIgnoreSymbolFile(true);
 
-		JavaCompiler c = ToolProvider.getSystemJavaCompiler();
+		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 		List<String> opts = new ArrayList<String>();
 		opts.add("-proc:only");
 		opts.addAll(javac_extras);
-		CompilationTask t = c.getTask(log, fileManager, diagnosticListener, opts, internalize(classes), null);
-		JNIProcessor p = new JNIProcessor(generator);
-		t.setProcessors(Collections.singleton(p));
+		CompilationTask task = compiler.getTask(log, fileManager, diagnosticListener, opts, internalize(classes), null);
+		JNIProcessor processor = new JNIProcessor(generator);
+		task.setProcessors(Collections.singleton(processor));
 
-		boolean ok = t.call();
-		if (p.mExit != null)
-			throw new Util.Exit(p.mExit);
+		boolean ok = task.call();
+		if (processor.exit != null)
+			throw new Util.Exit(processor.exit);
 		return ok;
 	}
 
@@ -643,7 +643,7 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 			} catch (IOException ioe) {
 				mMessager.printMessage(ERROR, getMessage("io.exception", ioe.getMessage()));
 			} catch (Util.Exit e) {
-				mExit = e;
+				exit = e;
 			}
 
 			return true;
@@ -701,6 +701,6 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 
 		private Messager mMessager;
 		private Gen mGenerator;
-		private Util.Exit mExit;
+		private Util.Exit exit;
 	}
 }
