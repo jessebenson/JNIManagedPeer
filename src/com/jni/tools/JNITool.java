@@ -36,38 +36,38 @@ import com.sun.tools.javah.NativeHeaderTool.NativeHeaderTask;
 
 public class JNITool implements NativeHeaderTool {
 
-    public NativeHeaderTask getTask(Writer out,
-            JavaFileManager fileManager,
-            DiagnosticListener<? super JavaFileObject> diagnosticListener,
-            Iterable<String> options,
-            Iterable<String> classes) {
-        return new JNITask(out, fileManager, diagnosticListener, options, classes);
-    }
+	public NativeHeaderTask getTask(Writer out,
+			JavaFileManager fileManager,
+			DiagnosticListener<? super JavaFileObject> diagnosticListener,
+			Iterable<String> options,
+			Iterable<String> classes) {
+		return new JNITask(out, fileManager, diagnosticListener, options, classes);
+	}
 
-    public StandardJavaFileManager getStandardFileManager(DiagnosticListener<? super JavaFileObject> diagnosticListener, Locale locale, Charset charset) {
-        return JNITask.getDefaultFileManager(diagnosticListener, null);
-    }
+	public StandardJavaFileManager getStandardFileManager(DiagnosticListener<? super JavaFileObject> diagnosticListener, Locale locale, Charset charset) {
+		return JNITask.getDefaultFileManager(diagnosticListener, null);
+	}
 
-    public int run(InputStream in, OutputStream out, OutputStream err, String... arguments) {
-    	JNITask t = new JNITask(
-    			JNITask.getPrintWriterForStream(out),
-                null,
-                null,
-                Arrays.asList(arguments),
-                null);
-        return (t.run() ? 0 : 1);
-    }
+	public int run(InputStream in, OutputStream out, OutputStream err, String... arguments) {
+		JNITask task = new JNITask(
+				JNITask.getPrintWriterForStream(out),
+				null,
+				null,
+				Arrays.asList(arguments),
+				null);
+		return (task.run() ? 0 : 1);
+	}
 
-    public Set<SourceVersion> getSourceVersions() {
-        return EnumSet.allOf(SourceVersion.class);
-    }
+	public Set<SourceVersion> getSourceVersions() {
+		return EnumSet.allOf(SourceVersion.class);
+	}
 
-    public int isSupportedOption(String option) {
-    	JNITask.Option[] options = JNITask.recognizedOptions;
-        for (int i = 0; i < options.length; i++) {
-            if (options[i].matches(option))
-                return (options[i].hasArg ? 1 : 0);
-        }
-        return -1;
-    }
+	public int isSupportedOption(String option) {
+		JNITask.Option[] options = JNITask.recognizedOptions;
+		for (int i = 0; i < options.length; i++) {
+			if (options[i].matches(option))
+				return (options[i].hasArg ? 1 : 0);
+		}
+		return -1;
+	}
 }

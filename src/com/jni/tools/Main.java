@@ -19,21 +19,21 @@ package com.jni.tools;
 import java.io.PrintWriter;
 
 public class Main {
- 
+
 	static {
 		// Set the JDK home to run this - required to get the Java compiler at runtime
-        System.setProperty("java.home", "C:\\Program Files\\Java\\jdk1.7.0_67");
+		System.setProperty("java.home", "C:\\Program Files\\Java\\jdk1.7.0_67");
 	}
-	
-    public static void main(String[] args) {
-        JNITask t = new JNITask();
-        int rc = t.run(args);
-        System.exit(rc);
-    }
 
-    public static int run(String[] args, PrintWriter out) {
-    	JNITask t = new JNITask();
-        t.setLog(out);
-        return t.run(args);
-    }
+	public static void main(String[] args) {
+		JNITask t = new JNITask();
+		int rc = t.run(args);
+		System.exit(rc);
+	}
+
+	public static int run(String[] args, PrintWriter out) {
+		JNITask t = new JNITask();
+		t.setLog(out);
+		return t.run(args);
+	}
 }
