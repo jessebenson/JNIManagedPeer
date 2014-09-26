@@ -48,7 +48,7 @@ public class JNIGenerator extends Gen {
 		return "#include <ManagedPeer.h>";
 	}
 
-	public void write(OutputStream o, TypeElement clazz) throws Util.Exit {
+	public void writeDeclaration(OutputStream o, TypeElement clazz) throws Util.Exit {
 		try {
 			String cname = mangler.mangle(clazz.getQualifiedName(), Mangle.Type.CLASS);
 			PrintWriter pw = wrapWriter(o);
@@ -121,6 +121,9 @@ public class JNIGenerator extends Gen {
 		}
 	}
 
+	public void writeDefinition(OutputStream o, TypeElement clazz) throws Util.Exit {
+	}
+	
 	protected final String jniType(TypeMirror type) throws Util.Exit {
 		TypeElement throwable = elems.getTypeElement("java.lang.Throwable");
 		TypeElement jClass = elems.getTypeElement("java.lang.Class");

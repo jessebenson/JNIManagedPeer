@@ -89,10 +89,16 @@ public abstract class Gen {
 
 
     /**
-     * Override this abstract method, generating content for the named
-     * class into the outputstream.
+     * Override this abstract method, generating content for the class declaration (i.e. header)
+     * of the named class into the outputstream.
      */
-    protected abstract void write(OutputStream o, TypeElement clazz) throws Util.Exit;
+    protected abstract void writeDeclaration(OutputStream o, TypeElement clazz) throws Util.Exit;
+
+    /**
+     * Override this abstract method, generating content for the class definition (i.e. cpp)
+     * of the named class into the outputstream.
+     */
+    protected abstract void writeDefinition(OutputStream o, TypeElement clazz) throws Util.Exit;
 
     /**
      * Override this method to provide a list of #include statements
@@ -156,25 +162,12 @@ public abstract class Gen {
      *         expr `du -sk` / `ls *.h | wc -l`
      */
     public void run() throws IOException, ClassNotFoundException, Util.Exit {
-        int i = 0;
-        if (outFile != null) {
-            /* Everything goes to one big file... */
+        /* Each class goes to its own file... */
+        for (TypeElement type : classes) {
             ByteArrayOutputStream bout = new ByteArrayOutputStream(8192);
-            writeFileTop(bout); /* only once */
-
-            for (TypeElement t: classes) {
-                write(bout, t);
-            }
-
-            writeIfChanged(bout.toByteArray(), outFile);
-        } else {
-            /* Each class goes to its own file... */
-            for (TypeElement t: classes) {
-                ByteArrayOutputStream bout = new ByteArrayOutputStream(8192);
-                writeFileTop(bout);
-                write(bout, t);
-                writeIfChanged(bout.toByteArray(), getFileObject(t.getQualifiedName()));
-            }
+            writeFileTop(bout);
+            writeDeclaration(bout, type);
+            writeIfChanged(bout.toByteArray(), getFileObject(type.getQualifiedName()));
         }
     }
 
