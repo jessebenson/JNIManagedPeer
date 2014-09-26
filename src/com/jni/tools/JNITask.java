@@ -158,13 +158,7 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 				task.help = true;
 			}
 		},
-	
-		new HiddenOption(false, "-trace") {
-			void process(JNITask task, String opt, String arg) {
-				task.trace = true;
-			}
-		},
-	
+
 		new Option(false, "-version") {
 			void process(JNITask task, String opt, String arg) {
 				task.version = true;
@@ -182,13 +176,7 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 				task.force = true;
 			}
 		},
-	
-		new HiddenOption(false, "-Xnew") {
-			void process(JNITask task, String opt, String arg) {
-				// we're already using the new javah
-			}
-		},
-	
+
 		new HiddenOption(false) {
 			boolean matches(String opt) {
 				return opt.startsWith("-XD");
@@ -602,7 +590,6 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 	boolean verbose;
 	boolean noArgs;
 	boolean help;
-	boolean trace;
 	boolean version;
 	boolean fullVersion;
 	boolean force;
