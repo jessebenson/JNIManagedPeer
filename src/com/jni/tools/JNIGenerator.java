@@ -111,7 +111,7 @@ public class JNIGenerator extends Gen {
 						pw.print(", ");
 						pw.print(jniType(arg));
 					}
-					pw.println(");" + lineSep);
+					pw.println(");" + lineSeparator);
 				}
 			}
 			pw.println(cppGuardEnd());
