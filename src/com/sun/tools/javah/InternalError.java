@@ -32,9 +32,9 @@ package com.sun.tools.javah;
  *  deletion without notice.</b>
  */
 public class InternalError extends Error {
-    private static final long serialVersionUID = 8411861562497165022L;
-    public InternalError(String msg, Throwable cause) {
-        super("Internal error: " + msg);
-        initCause(cause);
-    }
+	private static final long serialVersionUID = 8411861562497165022L;
+	public InternalError(String msg, Throwable cause) {
+		super("Internal error: " + msg);
+		initCause(cause);
+	}
 }

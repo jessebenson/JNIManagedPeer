@@ -50,141 +50,139 @@ import javax.tools.JavaFileObject;
  * or deletion without notice.</b></p>
  */
 public class Util {
-    /** Exit is used to replace the use of System.exit in the original javah.
-     */
-    public static class Exit extends Error {
-        private static final long serialVersionUID = 430820978114067221L;
-        public Exit(int exitValue) {
-            this(exitValue, null);
-        }
+	/** Exit is used to replace the use of System.exit in the original javah.
+	 */
+	public static class Exit extends Error {
+		private static final long serialVersionUID = 430820978114067221L;
+		public Exit(int exitValue) {
+			this(exitValue, null);
+		}
 
-        public Exit(int exitValue, Throwable cause) {
-            super(cause);
-            this.exitValue = exitValue;
-            this.cause = cause;
-        }
+		public Exit(int exitValue, Throwable cause) {
+			super(cause);
+			this.exitValue = exitValue;
+			this.cause = cause;
+		}
 
-        public Exit(Exit e) {
-            this(e.exitValue, e.cause);
-        }
+		public Exit(Exit e) {
+			this(e.exitValue, e.cause);
+		}
 
-        public final int exitValue;
-        public final Throwable cause;
-    }
+		public final int exitValue;
+		public final Throwable cause;
+	}
 
-    /*
-     * Help for verbosity.
-     */
-    public boolean verbose = false;
+	/*
+	 * Help for verbosity.
+	 */
+	public boolean verbose = false;
 
-    public PrintWriter log;
-    public DiagnosticListener<? super JavaFileObject> dl;
+	public PrintWriter log;
+	public DiagnosticListener<? super JavaFileObject> dl;
 
-    public Util(PrintWriter log, DiagnosticListener<? super JavaFileObject> dl) {
-        this.log = log;
-        this.dl = dl;
-    }
+	public Util(PrintWriter log, DiagnosticListener<? super JavaFileObject> dl) {
+		this.log = log;
+		this.dl = dl;
+	}
 
-    public void log(String s) {
-        log.println(s);
-    }
+	public void log(String s) {
+		log.println(s);
+	}
 
 
-    /*
-     * Help for loading localized messages.
-     */
-    private ResourceBundle m;
+	/*
+	 * Help for loading localized messages.
+	 */
+	private ResourceBundle m;
 
-    private void initMessages() throws Exit {
-        try {
-            m = ResourceBundle.getBundle("com.sun.tools.javah.resources.l10n");
-        } catch (MissingResourceException mre) {
-            fatal("Error loading resources.  Please file a bug report.", mre);
-        }
-    }
+	private void initMessages() throws Exit {
+		try {
+			m = ResourceBundle.getBundle("com.sun.tools.javah.resources.l10n");
+		} catch (MissingResourceException mre) {
+			fatal("Error loading resources.  Please file a bug report.", mre);
+		}
+	}
 
-    private String getText(String key, Object... args) throws Exit {
-        if (m == null)
-            initMessages();
-        try {
-            return MessageFormat.format(m.getString(key), args);
-        } catch (MissingResourceException e) {
-            fatal("Key " + key + " not found in resources.", e);
-        }
-        return null; /* dead code */
-    }
+	private String getText(String key, Object... args) throws Exit {
+		if (m == null)
+			initMessages();
+		try {
+			return MessageFormat.format(m.getString(key), args);
+		} catch (MissingResourceException e) {
+			fatal("Key " + key + " not found in resources.", e);
+		}
+		return null; /* dead code */
+	}
 
-    /*
-     * Usage message.
-     */
-    public void usage() throws Exit {
-        log.println(getText("usage"));
-    }
+	/*
+	 * Usage message.
+	 */
+	public void usage() throws Exit {
+		log.println(getText("usage"));
+	}
 
-    public void version() throws Exit {
-        log.println(getText("javah.version",
-                                   System.getProperty("java.version"), null));
-    }
+	public void version() throws Exit {
+		log.println(getText("javah.version", System.getProperty("java.version"), null));
+	}
 
-    /*
-     * Failure modes.
-     */
-    public void bug(String key) throws Exit {
-        bug(key, null);
-    }
+	/*
+	 * Failure modes.
+	 */
+	public void bug(String key) throws Exit {
+		bug(key, null);
+	}
 
-    public void bug(String key, Exception e) throws Exit {
-        dl.report(createDiagnostic(Diagnostic.Kind.ERROR, key));
-        dl.report(createDiagnostic(Diagnostic.Kind.NOTE, "bug.report"));
-        throw new Exit(11, e);
-    }
+	public void bug(String key, Exception e) throws Exit {
+		dl.report(createDiagnostic(Diagnostic.Kind.ERROR, key));
+		dl.report(createDiagnostic(Diagnostic.Kind.NOTE, "bug.report"));
+		throw new Exit(11, e);
+	}
 
-    public void error(String key, Object... args) throws Exit {
-        dl.report(createDiagnostic(Diagnostic.Kind.ERROR, key, args));
-        throw new Exit(15);
-    }
+	public void error(String key, Object... args) throws Exit {
+		dl.report(createDiagnostic(Diagnostic.Kind.ERROR, key, args));
+		throw new Exit(15);
+	}
 
-    private void fatal(String msg) throws Exit {
-        fatal(msg, null);
-    }
+	private void fatal(String msg) throws Exit {
+		fatal(msg, null);
+	}
 
-    private void fatal(String msg, Exception e) throws Exit {
-        dl.report(createDiagnostic(Diagnostic.Kind.ERROR, "", msg));
-        throw new Exit(10, e);
-    }
+	private void fatal(String msg, Exception e) throws Exit {
+		dl.report(createDiagnostic(Diagnostic.Kind.ERROR, "", msg));
+		throw new Exit(10, e);
+	}
 
-    private Diagnostic<JavaFileObject> createDiagnostic(
-            final Diagnostic.Kind kind, final String code, final Object... args) {
-        return new Diagnostic<JavaFileObject>() {
-            public String getCode() {
-                return code;
-            }
-            public long getColumnNumber() {
-                return Diagnostic.NOPOS;
-            }
-            public long getEndPosition() {
-                return Diagnostic.NOPOS;
-            }
-            public Kind getKind() {
-                return kind;
-            }
-            public long getLineNumber() {
-                return Diagnostic.NOPOS;
-            }
-            public String getMessage(Locale locale) {
-                if (code.length() == 0)
-                    return (String) args[0];
-                return getText(code, args); // FIXME locale
-            }
-            public long getPosition() {
-                return Diagnostic.NOPOS;
-            }
-            public JavaFileObject getSource() {
-                return null;
-            }
-            public long getStartPosition() {
-                return Diagnostic.NOPOS;
-            }
-        };
-    }
+	private Diagnostic<JavaFileObject> createDiagnostic(final Diagnostic.Kind kind, final String code, final Object... args) {
+		return new Diagnostic<JavaFileObject>() {
+			public String getCode() {
+				return code;
+			}
+			public long getColumnNumber() {
+				return Diagnostic.NOPOS;
+			}
+			public long getEndPosition() {
+				return Diagnostic.NOPOS;
+			}
+			public Kind getKind() {
+				return kind;
+			}
+			public long getLineNumber() {
+				return Diagnostic.NOPOS;
+			}
+			public String getMessage(Locale locale) {
+				if (code.length() == 0)
+					return (String) args[0];
+				return getText(code, args); // FIXME locale
+			}
+			public long getPosition() {
+				return Diagnostic.NOPOS;
+			}
+			public JavaFileObject getSource() {
+				return null;
+			}
+			public long getStartPosition() {
+				return Diagnostic.NOPOS;
+			}
+		};
+	}
 }

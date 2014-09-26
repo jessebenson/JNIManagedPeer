@@ -68,310 +68,305 @@ import javax.tools.StandardLocation;
  * @author  Sucheta Dambalkar(Revised)
  */
 public abstract class Gen {
-    protected String lineSep = System.getProperty("line.separator");
+	protected String lineSep = System.getProperty("line.separator");
 
-    protected ProcessingEnvironment processingEnvironment;
-    protected Types types;
-    protected Elements elems;
-    protected Mangle mangler;
-    protected Util util;
+	protected ProcessingEnvironment processingEnvironment;
+	protected Types types;
+	protected Elements elems;
+	protected Mangle mangler;
+	protected Util util;
 
-    protected Gen(Util util) {
-        this.util = util;
-    }
+	protected Gen(Util util) {
+		this.util = util;
+	}
 
-    /*
-     * List of classes for which we must generate output.
-     */
-    protected Set<TypeElement> classes;
-    static private final boolean isWindows =
-        System.getProperty("os.name").startsWith("Windows");
-
-
-    /**
-     * Override this abstract method, generating content for the class declaration (i.e. header)
-     * of the named class into the outputstream.
-     */
-    protected abstract void writeDeclaration(OutputStream o, TypeElement clazz) throws Util.Exit;
-
-    /**
-     * Override this abstract method, generating content for the class definition (i.e. cpp)
-     * of the named class into the outputstream.
-     */
-    protected abstract void writeDefinition(OutputStream o, TypeElement clazz) throws Util.Exit;
-
-    /**
-     * Override this method to provide a list of #include statements
-     * required by the native interface.
-     */
-    protected abstract String getIncludes();
-
-    /*
-     * Output location.
-     */
-    protected JavaFileManager fileManager;
-    protected JavaFileObject outFile;
-
-    public void setFileManager(JavaFileManager fm) {
-        fileManager = fm;
-    }
-
-    public void setOutFile(JavaFileObject outFile) {
-        this.outFile = outFile;
-    }
+	/*
+	 * List of classes for which we must generate output.
+	 */
+	protected Set<TypeElement> classes;
+	static private final boolean isWindows = System.getProperty("os.name").startsWith("Windows");
 
 
-    public void setClasses(Set<TypeElement> classes) {
-        this.classes = classes;
-    }
+	/**
+	 * Override this abstract method, generating content for the class declaration (i.e. header)
+	 * of the named class into the outputstream.
+	 */
+	protected abstract void writeDeclaration(OutputStream o, TypeElement clazz) throws Util.Exit;
 
-    public void setProcessingEnvironment(ProcessingEnvironment pEnv) {
-        processingEnvironment = pEnv;
-        elems = pEnv.getElementUtils();
-        types = pEnv.getTypeUtils();
-        mangler = new Mangle(elems, types);
-    }
+	/**
+	 * Override this abstract method, generating content for the class definition (i.e. cpp)
+	 * of the named class into the outputstream.
+	 */
+	protected abstract void writeDefinition(OutputStream o, TypeElement clazz) throws Util.Exit;
 
-    /*
-     * Smartness with generated files.
-     */
-    protected boolean force = false;
+	/**
+	 * Override this method to provide a list of #include statements
+	 * required by the native interface.
+	 */
+	protected abstract String getIncludes();
 
-    public void setForce(boolean state) {
-        force = state;
-    }
+	/*
+	 * Output location.
+	 */
+	protected JavaFileManager fileManager;
+	protected JavaFileObject outFile;
 
-    /**
-     * We explicitly need to write ASCII files because that is what C
-     * compilers understand.
-     */
-    protected PrintWriter wrapWriter(OutputStream o) throws Util.Exit {
-        try {
-            return new PrintWriter(new OutputStreamWriter(o, "ISO8859_1"), true);
-        } catch (UnsupportedEncodingException use) {
-            util.bug("encoding.iso8859_1.not.found");
-            return null; /* dead code */
-        }
-    }
+	public void setFileManager(JavaFileManager fm) {
+		fileManager = fm;
+	}
 
-    /**
-     * After initializing state of an instance, use this method to start
-     * processing.
-     *
-     * Buffer size chosen as an approximation from a single sampling of:
-     *         expr `du -sk` / `ls *.h | wc -l`
-     */
-    public void run() throws IOException, ClassNotFoundException, Util.Exit {
-        /* Each class goes to its own file... */
-        for (TypeElement type : classes) {
-            ByteArrayOutputStream bout = new ByteArrayOutputStream(8192);
-            writeFileTop(bout);
-            writeDeclaration(bout, type);
-            writeIfChanged(bout.toByteArray(), getFileObject(type.getQualifiedName()));
-        }
-    }
+	public void setOutFile(JavaFileObject outFile) {
+		this.outFile = outFile;
+	}
 
-    /*
-     * Write the contents of byte[] b to a file named file.  Writing
-     * is done if either the file doesn't exist or if the contents are
-     * different.
-     */
-    private void writeIfChanged(byte[] b, FileObject file) throws IOException {
-        boolean mustWrite = false;
-        String event = "[No need to update file ";
+	public void setClasses(Set<TypeElement> classes) {
+		this.classes = classes;
+	}
 
-        if (force) {
-            mustWrite = true;
-            event = "[Forcefully writing file ";
-        } else {
-            InputStream in;
-            byte[] a;
-            try {
-                // regrettably, there's no API to get the length in bytes
-                // for a FileObject, so we can't short-circuit reading the
-                // file here
-                in = file.openInputStream();
-                a = readBytes(in);
-                if (!Arrays.equals(a, b)) {
-                    mustWrite = true;
-                    event = "[Overwriting file ";
+	public void setProcessingEnvironment(ProcessingEnvironment pEnv) {
+		processingEnvironment = pEnv;
+		elems = pEnv.getElementUtils();
+		types = pEnv.getTypeUtils();
+		mangler = new Mangle(elems, types);
+	}
 
-                }
-            } catch (FileNotFoundException e) {
-                mustWrite = true;
-                event = "[Creating file ";
-            }
-        }
+	/*
+	 * Smartness with generated files.
+	 */
+	protected boolean force = false;
 
-        if (util.verbose)
-            util.log(event + file + "]");
+	public void setForce(boolean state) {
+		force = state;
+	}
 
-        if (mustWrite) {
-            OutputStream out = file.openOutputStream();
-            out.write(b); /* No buffering, just one big write! */
-            out.close();
-        }
-    }
+	/**
+	 * We explicitly need to write ASCII files because that is what C
+	 * compilers understand.
+	 */
+	protected PrintWriter wrapWriter(OutputStream o) throws Util.Exit {
+		try {
+			return new PrintWriter(new OutputStreamWriter(o, "ISO8859_1"), true);
+		} catch (UnsupportedEncodingException use) {
+			util.bug("encoding.iso8859_1.not.found");
+			return null; /* dead code */
+		}
+	}
 
-    protected byte[] readBytes(InputStream in) throws IOException {
-        try {
-            byte[] array = new byte[in.available() + 1];
-            int offset = 0;
-            int n;
-            while ((n = in.read(array, offset, array.length - offset)) != -1) {
-                offset += n;
-                if (offset == array.length)
-                    array = Arrays.copyOf(array, array.length * 2);
-            }
+	/**
+	 * After initializing state of an instance, use this method to start
+	 * processing.
+	 *
+	 * Buffer size chosen as an approximation from a single sampling of:
+	 *         expr `du -sk` / `ls *.h | wc -l`
+	 */
+	public void run() throws IOException, ClassNotFoundException, Util.Exit {
+		/* Each class goes to its own file... */
+		for (TypeElement type : classes) {
+			ByteArrayOutputStream bout = new ByteArrayOutputStream(8192);
+			writeFileTop(bout);
+			writeDeclaration(bout, type);
+			writeIfChanged(bout.toByteArray(), getFileObject(type.getQualifiedName()));
+		}
+	}
 
-            return Arrays.copyOf(array, offset);
-        } finally {
-            in.close();
-        }
-    }
+	/*
+	 * Write the contents of byte[] b to a file named file.  Writing
+	 * is done if either the file doesn't exist or if the contents are
+	 * different.
+	 */
+	private void writeIfChanged(byte[] b, FileObject file) throws IOException {
+		boolean mustWrite = false;
+		String event = "[No need to update file ";
 
-    protected String defineForStatic(TypeElement c, VariableElement f)
-            throws Util.Exit {
-        CharSequence cnamedoc = c.getQualifiedName();
-        CharSequence fnamedoc = f.getSimpleName();
+		if (force) {
+			mustWrite = true;
+			event = "[Forcefully writing file ";
+		} else {
+			InputStream in;
+			byte[] a;
+			try {
+				// regrettably, there's no API to get the length in bytes
+				// for a FileObject, so we can't short-circuit reading the
+				// file here
+				in = file.openInputStream();
+				a = readBytes(in);
+				if (!Arrays.equals(a, b)) {
+					mustWrite = true;
+					event = "[Overwriting file ";
 
-        String cname = mangler.mangle(cnamedoc, Mangle.Type.CLASS);
-        String fname = mangler.mangle(fnamedoc, Mangle.Type.FIELDSTUB);
+				}
+			} catch (FileNotFoundException e) {
+				mustWrite = true;
+				event = "[Creating file ";
+			}
+		}
 
-        if (!f.getModifiers().contains(Modifier.STATIC))
-            util.bug("tried.to.define.non.static");
+		if (util.verbose)
+			util.log(event + file + "]");
 
-        if (f.getModifiers().contains(Modifier.FINAL)) {
-            Object value = null;
+		if (mustWrite) {
+			OutputStream out = file.openOutputStream();
+			out.write(b); /* No buffering, just one big write! */
+			out.close();
+		}
+	}
 
-            value = f.getConstantValue();
+	protected byte[] readBytes(InputStream in) throws IOException {
+		try {
+			byte[] array = new byte[in.available() + 1];
+			int offset = 0;
+			int n;
+			while ((n = in.read(array, offset, array.length - offset)) != -1) {
+				offset += n;
+				if (offset == array.length)
+					array = Arrays.copyOf(array, array.length * 2);
+			}
 
-            if (value != null) { /* so it is a ConstantExpression */
-                String constString = null;
-                if ((value instanceof Integer)
-                    || (value instanceof Byte)
-                    || (value instanceof Short)) {
-                    /* covers byte, short, int */
-                    constString = value.toString() + "L";
-                } else if (value instanceof Boolean) {
-                    constString = ((Boolean) value) ? "1L" : "0L";
-                } else if (value instanceof Character) {
-                    Character ch = (Character) value;
-                    constString = String.valueOf(((int) ch) & 0xffff) + "L";
-                } else if (value instanceof Long) {
-                    // Visual C++ supports the i64 suffix, not LL.
-                    if (isWindows)
-                        constString = value.toString() + "i64";
-                    else
-                        constString = value.toString() + "LL";
-                } else if (value instanceof Float) {
-                    /* bug for bug */
-                    float fv = ((Float)value).floatValue();
-                    if (Float.isInfinite(fv))
-                        constString = ((fv < 0) ? "-" : "") + "Inff";
-                    else
-                        constString = value.toString() + "f";
-                } else if (value instanceof Double) {
-                    /* bug for bug */
-                    double d = ((Double)value).doubleValue();
-                    if (Double.isInfinite(d))
-                        constString = ((d < 0) ? "-" : "") + "InfD";
-                    else
-                        constString = value.toString();
-                }
-                if (constString != null) {
-                    StringBuffer s = new StringBuffer("#undef ");
-                    s.append(cname); s.append("_"); s.append(fname); s.append(lineSep);
-                    s.append("#define "); s.append(cname); s.append("_");
-                    s.append(fname); s.append(" "); s.append(constString);
-                    return s.toString();
-                }
+			return Arrays.copyOf(array, offset);
+		} finally {
+			in.close();
+		}
+	}
 
-            }
-        }
-        return null;
-    }
+	protected String defineForStatic(TypeElement c, VariableElement f) throws Util.Exit {
+		CharSequence cnamedoc = c.getQualifiedName();
+		CharSequence fnamedoc = f.getSimpleName();
 
-    /*
-     * Deal with the C pre-processor.
-     */
-    protected String cppGuardBegin() {
-        return "#ifdef __cplusplus" + lineSep + "extern \"C\" {" + lineSep + "#endif";
-    }
+		String cname = mangler.mangle(cnamedoc, Mangle.Type.CLASS);
+		String fname = mangler.mangle(fnamedoc, Mangle.Type.FIELDSTUB);
 
-    protected String cppGuardEnd() {
-        return "#ifdef __cplusplus" + lineSep + "}" + lineSep + "#endif";
-    }
+		if (!f.getModifiers().contains(Modifier.STATIC))
+			util.bug("tried.to.define.non.static");
 
-    protected String guardBegin(String cname) {
-        return "/* Header for class " + cname + " */" + lineSep + lineSep +
-            "#ifndef _Included_" + cname + lineSep +
-            "#define _Included_" + cname;
-    }
+		if (f.getModifiers().contains(Modifier.FINAL)) {
+			Object value = null;
 
-    protected String guardEnd(String cname) {
-        return "#endif";
-    }
+			value = f.getConstantValue();
 
-    /*
-     * File name and file preamble related operations.
-     */
-    protected void writeFileTop(OutputStream o) throws Util.Exit {
-        PrintWriter pw = wrapWriter(o);
-        pw.println("/* DO NOT EDIT THIS FILE - it is machine generated */" + lineSep +
-                   getIncludes());
-    }
+			if (value != null) { /* so it is a ConstantExpression */
+				String constString = null;
+				if ((value instanceof Integer) || (value instanceof Byte) || (value instanceof Short)) {
+					/* covers byte, short, int */
+					constString = value.toString() + "L";
+				} else if (value instanceof Boolean) {
+					constString = ((Boolean) value) ? "1L" : "0L";
+				} else if (value instanceof Character) {
+					Character ch = (Character) value;
+					constString = String.valueOf(((int) ch) & 0xffff) + "L";
+				} else if (value instanceof Long) {
+					// Visual C++ supports the i64 suffix, not LL.
+					if (isWindows)
+						constString = value.toString() + "i64";
+					else
+						constString = value.toString() + "LL";
+				} else if (value instanceof Float) {
+					/* bug for bug */
+					float fv = ((Float)value).floatValue();
+					if (Float.isInfinite(fv))
+						constString = ((fv < 0) ? "-" : "") + "Inff";
+					else
+						constString = value.toString() + "f";
+				} else if (value instanceof Double) {
+					/* bug for bug */
+					double d = ((Double)value).doubleValue();
+					if (Double.isInfinite(d))
+						constString = ((d < 0) ? "-" : "") + "InfD";
+					else
+						constString = value.toString();
+				}
+				if (constString != null) {
+					StringBuffer s = new StringBuffer("#undef ");
+					s.append(cname); s.append("_"); s.append(fname); s.append(lineSep);
+					s.append("#define "); s.append(cname); s.append("_");
+					s.append(fname); s.append(" "); s.append(constString);
+					return s.toString();
+				}
 
-    protected String baseFileName(CharSequence className) {
-        return mangler.mangle(className, Mangle.Type.CLASS);
-    }
+			}
+		}
+		return null;
+	}
 
-    protected FileObject getFileObject(CharSequence className) throws IOException {
-        String name = baseFileName(className) + getFileSuffix();
-        return fileManager.getFileForOutput(StandardLocation.SOURCE_OUTPUT, "", name, null);
-    }
+	/*
+	 * Deal with the C pre-processor.
+	 */
+	protected String cppGuardBegin() {
+		return "#ifdef __cplusplus" + lineSep + "extern \"C\" {" + lineSep + "#endif";
+	}
 
-    protected String getFileSuffix() {
-        return ".h";
-    }
+	protected String cppGuardEnd() {
+		return "#ifdef __cplusplus" + lineSep + "}" + lineSep + "#endif";
+	}
 
-    /**
-     * Including super classes' fields.
-     */
+	protected String guardBegin(String cname) {
+		return "/* Header for class " + cname + " */" + lineSep + lineSep +
+				"#ifndef _Included_" + cname + lineSep +
+				"#define _Included_" + cname;
+	}
 
-    public List<VariableElement> getAllFields(TypeElement subclazz) {
-        List<VariableElement> fields = new ArrayList<VariableElement>();
-        TypeElement cd = null;
-        Stack<TypeElement> s = new Stack<TypeElement>();
+	protected String guardEnd(String cname) {
+		return "#endif";
+	}
 
-        cd = subclazz;
-        while (true) {
-            s.push(cd);
-            TypeElement c = (TypeElement) (types.asElement(cd.getSuperclass()));
-            if (c == null)
-                break;
-            cd = c;
-        }
+	/*
+	 * File name and file preamble related operations.
+	 */
+	protected void writeFileTop(OutputStream o) throws Util.Exit {
+		PrintWriter pw = wrapWriter(o);
+		pw.println("/* DO NOT EDIT THIS FILE - it is machine generated */" + lineSep +
+				getIncludes());
+	}
 
-        while (!s.empty()) {
-            cd = s.pop();
-            fields.addAll(ElementFilter.fieldsIn(cd.getEnclosedElements()));
-        }
+	protected String baseFileName(CharSequence className) {
+		return mangler.mangle(className, Mangle.Type.CLASS);
+	}
 
-        return fields;
-    }
+	protected FileObject getFileObject(CharSequence className) throws IOException {
+		String name = baseFileName(className) + getFileSuffix();
+		return fileManager.getFileForOutput(StandardLocation.SOURCE_OUTPUT, "", name, null);
+	}
 
-    // c.f. MethodDoc.signature
-    public String signature(ExecutableElement e) {
-        StringBuffer sb = new StringBuffer("(");
-        String sep = "";
-        for (VariableElement p: e.getParameters()) {
-            sb.append(sep);
-            sb.append(types.erasure(p.asType()).toString());
-            sep = ",";
-        }
-        sb.append(")");
-        return sb.toString();
-    }
+	protected String getFileSuffix() {
+		return ".h";
+	}
+
+	/**
+	 * Including super classes' fields.
+	 */
+
+	public List<VariableElement> getAllFields(TypeElement subclazz) {
+		List<VariableElement> fields = new ArrayList<VariableElement>();
+		TypeElement cd = null;
+		Stack<TypeElement> s = new Stack<TypeElement>();
+
+		cd = subclazz;
+		while (true) {
+			s.push(cd);
+			TypeElement c = (TypeElement) (types.asElement(cd.getSuperclass()));
+			if (c == null)
+				break;
+			cd = c;
+		}
+
+		while (!s.empty()) {
+			cd = s.pop();
+			fields.addAll(ElementFilter.fieldsIn(cd.getEnclosedElements()));
+		}
+
+		return fields;
+	}
+
+	// c.f. MethodDoc.signature
+	public String signature(ExecutableElement e) {
+		StringBuffer sb = new StringBuffer("(");
+		String sep = "";
+		for (VariableElement p : e.getParameters()) {
+			sb.append(sep);
+			sb.append(types.erasure(p.asType()).toString());
+			sep = ",";
+		}
+		sb.append(")");
+		return sb.toString();
+	}
 }
 
