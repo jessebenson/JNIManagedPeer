@@ -26,14 +26,14 @@ public class Main {
 	}
 
 	public static void main(String[] args) {
-		JNITask t = new JNITask();
-		int rc = t.run(args);
+		JNITask task = new JNITask();
+		int rc = task.run(args);
 		System.exit(rc);
 	}
 
 	public static int run(String[] args, PrintWriter out) {
-		JNITask t = new JNITask();
-		t.setLog(out);
-		return t.run(args);
+		JNITask task = new JNITask();
+		task.setLog(out);
+		return task.run(args);
 	}
 }

@@ -306,20 +306,20 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 
 		while (iter.hasNext()) {
 			String arg = iter.next();
-			if (arg.startsWith("-"))
+			if (arg.startsWith("-")) {
 				handleOption(arg, iter);
-			else if (allowClasses) {
+			} else if (allowClasses) {
 				if (classes == null)
 					classes = new ArrayList<String>();
 				classes.add(arg);
 				while (iter.hasNext())
 					classes.add(iter.next());
-			} else
+			} else {
 				throw new BadArgs("err.unknown.option", arg).showUsage(true);
+			}
 		}
 
-		if ((classes == null || classes.size() == 0)
-				&& !(noArgs || help || version || fullVersion)) {
+		if ((classes == null || classes.size() == 0) && !(noArgs || help || version || fullVersion)) {
 			throw new BadArgs("err.no.classes.specified");
 		}
 
@@ -335,8 +335,9 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 						o.process(this, name, rest.next());
 					else
 						throw new BadArgs("err.missing.arg", name).showUsage(true);
-				} else
+				} else {
 					o.process(this, name, null);
+				}
 
 				if (o.ignoreRest()) {
 					while (rest.hasNext())
@@ -346,10 +347,8 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 			}
 		}
 
-		if (fileManager.handleOption(name, rest))
-			return;
-
-		throw new BadArgs("err.unknown.option", name).showUsage(true);
+		if (!fileManager.handleOption(name, rest))
+			throw new BadArgs("err.unknown.option", name).showUsage(true);
 	}
 
 	private Iterable<String> expandAtArgs(Iterable<String> args) throws BadArgs {
@@ -370,7 +369,6 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 	}
 
 	public boolean run() throws Util.Exit {
-
 		Util util = new Util(log, diagnosticListener);
 
 		if (noArgs || help) {
@@ -392,6 +390,7 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 				diagnosticListener.report(createDiagnostic("err.cant.use.option.for.fm", "-o"));
 				return false;
 			}
+
 			Iterable<? extends JavaFileObject> iter = ((StandardJavaFileManager) fileManager).getJavaFileObjectsFromFiles(Collections.singleton(ofile));
 			JavaFileObject fo = iter.iterator().next();
 			generator.setOutFile(fo);
@@ -402,9 +401,11 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 					return false;
 				}
 
-				if (!odir.exists())
+				if (!odir.exists()) {
 					if (!odir.mkdirs())
 						util.error("cant.create.dir", odir.toString());
+				}
+
 				try {
 					((StandardJavaFileManager) fileManager).setLocation(StandardLocation.CLASS_OUTPUT, Collections.singleton(odir));
 				} catch (IOException e) {
@@ -412,6 +413,7 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 					if (msg == null) {
 						msg = e;
 					}
+
 					diagnosticListener.report(createDiagnostic("err.ioerror", odir, msg));
 					return false;
 				}
@@ -443,18 +445,18 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 	}
 
 	private List<String> internalize(List<String> classes) {
-		List<String> l = new ArrayList<String>();
-		for (String c : classes) {
-			l.add(c.replace('$', '.'));
+		List<String> list = new ArrayList<String>();
+		for (String clazz : classes) {
+			list.add(clazz.replace('$', '.'));
 		}
-		return l;
+		return list;
 	}
 
 	private List<File> pathToFiles(String path) {
 		List<File> files = new ArrayList<File>();
-		for (String f : path.split(File.pathSeparator)) {
-			if (f.length() > 0)
-				files.add(new File(f));
+		for (String file : path.split(File.pathSeparator)) {
+			if (file.length() > 0)
+				files.add(new File(file));
 		}
 		return files;
 	}
@@ -465,20 +467,22 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 
 	private void showHelp() {
 		log.println(getMessage("main.usage", progname));
-		for (Option o : recognizedOptions) {
-			if (o.isHidden())
+		for (Option option : recognizedOptions) {
+			if (option.isHidden())
 				continue;
-			String name = o.aliases[0].substring(1); // there must always be at
+			String name = option.aliases[0].substring(1); // there must always be at
 														// least one name
 			log.println(getMessage("main.opt." + name));
 		}
+
 		String[] fmOptions = { "-classpath", "-bootclasspath" };
-		for (String o : fmOptions) {
-			if (fileManager.isSupportedOption(o) == -1)
+		for (String option : fmOptions) {
+			if (fileManager.isSupportedOption(option) == -1)
 				continue;
-			String name = o.substring(1);
+			String name = option.substring(1);
 			log.println(getMessage("main.opt." + name));
 		}
+
 		log.println(getMessage("main.usage.foot"));
 	}
 
