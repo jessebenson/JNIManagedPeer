@@ -29,6 +29,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 
@@ -46,7 +47,8 @@ public class JNIGenerator extends Gen {
 
 	@Override
 	public String getIncludes() {
-		return "#include <ManagedPeer.h>";
+		return "#include <JNIManagedPeer.h>" + lineSeparator +
+				"#include <jni.h>";
 	}
 
 	@Override
@@ -56,64 +58,243 @@ public class JNIGenerator extends Gen {
 	
 	@Override
 	public void writeDeclaration(OutputStream o, TypeElement clazz) throws Util.Exit {
+		String cname = baseFileName(clazz);
+		PrintWriter pw = wrapWriter(o);
+
+		/* Get the desired namespace for this peer class */
+		String[] namespace = getNamespace(clazz);
+		pw.println(cppNamespaceBegin(namespace));
+		pw.println();
+
+		/* All ManagedPeer classes derive from the base JNI::ManagedPeer class */
+		pw.println("class " + cname + " : public ::JNI::ManagedPeer");
+		pw.println("{");
+		pw.println("public:");
+		pw.println("\t" + cname + "(jobject object);");
+		pw.println("\t~" + cname + "()");
+		pw.println();
+		pw.println("\t" + "static jclass GetClass();");
+		pw.println();
+
+		/* Write declarations for methods marked with the JNIMethod annotation. */
+		List<ExecutableElement> classmethods = ElementFilter.methodsIn(clazz.getEnclosedElements());
+		for (ExecutableElement method : classmethods) {
+			Annotation jniMethod = method.getAnnotation(JNIMethod.class);
+			if (jniMethod != null) {
+				String returnType = getReturnType(method);
+				String methodName = getMethodName(method);
+				String argumentSignature = getArgumentsSignature(method, /*includeTypes:*/ true);
+				
+				pw.println("\t" + returnType + " " + methodName + "(" + argumentSignature + ");");
+			}
+		}
+
+		pw.println("};");
+		pw.println();
+
+		/* Close the namespace */
+		pw.println(cppNamespaceEnd(namespace));
+	}
+
+	@Override
+	public void writeDefinition(OutputStream o, TypeElement clazz) throws Util.Exit {
 		try {
 			String cname = baseFileName(clazz);
 			PrintWriter pw = wrapWriter(o);
+			TypeSignature typeSignature = new TypeSignature(elems);
 
-			/* Write methods. */
+			/* Get the desired namespace for this peer class */
+			String[] namespace = getNamespace(clazz);
+			pw.println(cppNamespaceBegin(namespace));
+			pw.println();
+			
+			/* Constructor */
+			pw.println(cname + "::" + cname + "(jobject object)");
+			pw.println("\t" + ": JNI::ManagedPeer(object)");
+			pw.println("{");
+			pw.println("}");
+			pw.println();
+			
+			/* Destructor */
+			pw.println(cname + "::~" + cname + "()");
+			pw.println("{");
+			pw.println("}");
+			pw.println();
+
+			/* static GetClass method - uses a static "ref counted" JClass variable to read the Java class once */
+			pw.println("jclass " + cname + "::GetClass()");
+			pw.println("{");
+			pw.println("\t" + "static JNI::ManagedPeer::JClass clazz(\"" + typeSignature.getTypeSignature(clazz) + "\");");
+			pw.println("\t" + "return clazz;");
+			pw.println("}");
+			pw.println();
+			
+			/* Write definitions for methods marked with the JNIMethod annotation. */
 			List<ExecutableElement> classmethods = ElementFilter.methodsIn(clazz.getEnclosedElements());
-			for (ExecutableElement md : classmethods) {
-				Annotation jniMethod = md.getAnnotation(JNIMethod.class);
+			for (ExecutableElement method : classmethods) {
+				Annotation jniMethod = method.getAnnotation(JNIMethod.class);
+				if (jniMethod != null) {
+					String returnType = getReturnType(method);
+					String methodName = getMethodName(method);
+					String argumentSignature = getArgumentsSignature(method, /*includeTypes:*/ true);
+					
+					CharSequence methodSimpleName = method.getSimpleName();
+					String methodSignature = typeSignature.getTypeSignature(signature(method), types.erasure(method.getReturnType()));
+					
+					/* Method signature */
+					pw.println(returnType + " " + cname + "::" + methodName + "(" + argumentSignature + ")");
+					pw.println("{");
+					
+					/* Static variable to compute the jmethodID once on first use */
+					pw.println("\t" + "static jmethodID methodID(GetMethodID(GetClass(), \"" + methodSimpleName + "\", \"" + methodSignature + "\"));");
+					
+					/* Generate the code to call the Java method. */
+					pw.print("\t");
+					pw.print(getCallSignature(method) + "(methodID");
+					String arguments = getArgumentsSignature(method, /*includeTypes:*/ false);
+					if (arguments != null && !arguments.isEmpty())
+						pw.print(", " + arguments);
+					pw.println(");");
 
-				if (md.getModifiers().contains(Modifier.NATIVE) || jniMethod != null) {
-					TypeMirror mtr = types.erasure(md.getReturnType());
-					String sig = signature(md);
-					TypeSignature newtypesig = new TypeSignature(elems);
-					CharSequence methodName = md.getSimpleName();
-					boolean longName = false;
-					for (ExecutableElement md2 : classmethods) {
-						if ((md2 != md)
-								&& (methodName.equals(md2.getSimpleName()))
-								&& (md2.getModifiers().contains(Modifier.NATIVE))) {
-							longName = true;							
-						}
-
-					}
-					pw.println("/*");
-					pw.println(" * Class:     " + cname);
-					pw.println(" * Method:    " + mangler.mangle(methodName, Mangle.Type.FIELDSTUB));
-					pw.println(" * Signature: " + newtypesig.getTypeSignature(sig, mtr));
-					pw.println(" */");
-					pw.println("JNIEXPORT " + jniType(mtr) + " JNICALL "
-							+ mangler.mangleMethod(md, clazz,
-									(longName) ? Mangle.Type.METHOD_JNI_LONG
-											: Mangle.Type.METHOD_JNI_SHORT));
-					pw.print("  (JNIEnv *, ");
-					List<? extends VariableElement> paramargs = md.getParameters();
-					List<TypeMirror> args = new ArrayList<TypeMirror>();
-					for (VariableElement p : paramargs) {
-						args.add(types.erasure(p.asType()));
-					}
-
-					if (md.getModifiers().contains(Modifier.STATIC))
-						pw.print("jclass");
-					else
-						pw.print("jobject");
-
-					for (TypeMirror arg : args) {
-						pw.print(", ");
-						pw.print(jniType(arg));
-					}
-					pw.println(");" + lineSeparator);
+					pw.println("}");
+					pw.println();
 				}
 			}
+
+			/* Close the namespace */
+			pw.println(cppNamespaceEnd(namespace));
 		} catch (TypeSignature.SignatureException e) {
 			util.error("jni.sigerror", e.getMessage());
 		}
 	}
 
-	@Override
-	public void writeDefinition(OutputStream o, TypeElement clazz) throws Util.Exit {
+	protected final String[] getNamespace(TypeElement clazz) {
+		JNIClass jniClass = clazz.getAnnotation(JNIClass.class);
+		if (jniClass == null)
+			util.bug("tried.to.define.non.annotated.class");
+		
+		String namespace = jniClass.value();
+		if (namespace == null)
+			util.error("JNIClass.does.not.define.namespace", clazz.getQualifiedName());
+		
+		return namespace.split("\\.");
+	}
+	
+	protected final String cppNamespaceBegin(String[] namespace) {
+		StringBuffer buffer = new StringBuffer();
+		for (String ns : namespace) {
+			buffer.append("namespace " + ns + " { ");
+		}
+		return buffer.toString();
+	}
+	
+	protected final String cppNamespaceEnd(String[] namespace) {
+		StringBuffer buffer = new StringBuffer();
+		for (int i = 0; i < namespace.length; i++) {
+			buffer.append("}");
+		}
+		buffer.append(" // namespace ");
+		for (int i = 0; i < namespace.length; i++) {
+			buffer.append(namespace[i]);
+			if (i+1 < namespace.length)
+				buffer.append(".");
+		}
+		return buffer.toString();
+	}
+
+	protected final String getReturnType(ExecutableElement method) {
+		TypeMirror returnType = types.erasure(method.getReturnType());
+		return jniType(returnType);
+	}
+	
+	protected final String getMethodName(ExecutableElement method) {
+		return mangler.mangle(method.getSimpleName(), Mangle.Type.FIELDSTUB);
+	}
+	
+	protected final String getArgumentsSignature(ExecutableElement method, boolean includeTypes) {
+		StringBuffer signature = new StringBuffer();
+
+		/* Write out the method parameters */
+		List<? extends VariableElement> paramArgs = method.getParameters();
+		for (int i = 0; i < paramArgs.size(); i++) {
+			VariableElement param = paramArgs.get(i);
+			if (includeTypes)
+			{
+				TypeMirror paramType = types.erasure(param.asType());
+				signature.append(jniType(paramType) + " ");
+			}
+			signature.append(param.getSimpleName());
+			if (i+1 < paramArgs.size())
+				signature.append(", ");
+		}
+
+		return signature.toString();
+	}
+	
+	private final String getCallSignature(ExecutableElement method, String baseSignature) {
+		if (method.getModifiers().contains(Modifier.STATIC))
+			return "CallStatic" + baseSignature + "Method";
+		else
+			return "Call" + baseSignature + "Method";
+	}
+	
+	protected final String getCallSignature(ExecutableElement method) {
+		TypeMirror returnType = types.erasure(method.getReturnType());
+		
+		String baseSignature = null;
+		boolean needsCast = false;
+		boolean needsReturn = true;
+
+		switch (returnType.getKind()) {
+		case VOID:
+			baseSignature = "Void";
+			needsReturn = false;
+			break;
+
+		case ARRAY:
+		case DECLARED:
+			baseSignature = "Object";
+			needsCast = true;
+			break;
+
+		case BOOLEAN:
+			baseSignature = "Boolean";
+			break;
+		case BYTE:
+			baseSignature = "Byte";
+			break;
+		case CHAR:
+			baseSignature = "Char";
+			break;
+		case SHORT:
+			baseSignature = "Short";
+			break;
+		case INT:
+			baseSignature = "Int";
+			break;
+		case LONG:
+			baseSignature = "Long";
+			break;
+		case FLOAT:
+			baseSignature = "Float";
+			break;
+		case DOUBLE:
+			baseSignature = "Double";
+			break;
+
+		default:
+			util.bug("jni.unknown.type");
+			return null;
+		}
+
+		StringBuffer signature = new StringBuffer();
+		if (needsReturn)
+			signature.append("return ");
+		if (needsCast)
+			signature.append("(" + getReturnType(method) + ")");
+		signature.append(getCallSignature(method, baseSignature));
+
+		return signature.toString();
 	}
 	
 	protected final String jniType(TypeMirror type) throws Util.Exit {

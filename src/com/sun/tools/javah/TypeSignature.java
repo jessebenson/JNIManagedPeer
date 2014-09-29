@@ -89,6 +89,14 @@ public class TypeSignature {
 	}
 
 	/*
+	 * Returns the type signature of a class according to JVM specs
+	 */
+	public String getTypeSignature(TypeElement clazz) {
+		String classname = clazz.getQualifiedName().toString();
+		return classname.replace('.', '/');
+	}
+	
+	/*
 	 * Returns the type signature of a method according to JVM specs
 	 */
 	public String getTypeSignature(String javasignature, TypeMirror returnType) throws SignatureException {
@@ -227,10 +235,8 @@ public class TypeSignature {
 					if (classNameDoc == null) {
 						throw new SignatureException(componentType);
 					} else {
-						String classname = classNameDoc.getQualifiedName().toString();
-						String newclassname = classname.replace('.', '/');
 						JVMSig += "L";
-						JVMSig += newclassname;
+						JVMSig += getTypeSignature(classNameDoc);
 						JVMSig += ";";
 					}
 				}

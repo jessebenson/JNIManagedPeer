@@ -171,22 +171,22 @@ public abstract class Gen {
 	/*
 	 * Generate the declaration for the given type and write it to a C++ header file.
 	 */
-	private void writeHeader(TypeElement type) throws IOException, ClassNotFoundException, Util.Exit {
-		String filename = baseFileName(type) + ".h";
+	private void writeHeader(TypeElement clazz) throws IOException, ClassNotFoundException, Util.Exit {
+		String filename = baseFileName(clazz) + ".h";
 		ByteArrayOutputStream bout = new ByteArrayOutputStream(8192);
 		writeHeaderBegin(bout);
-		writeDeclaration(bout, type);
+		writeDeclaration(bout, clazz);
 		writeIfChanged(bout.toByteArray(), getFileObject(filename));
 	}
 
 	/*
 	 * Generate the definition for the given type and write it to a C++ code file.
 	 */
-	private void writeCpp(TypeElement type) throws IOException, ClassNotFoundException, Util.Exit {
-		String filename = baseFileName(type) + ".cpp";
+	private void writeCpp(TypeElement clazz) throws IOException, ClassNotFoundException, Util.Exit {
+		String filename = baseFileName(clazz) + ".cpp";
 		ByteArrayOutputStream bout = new ByteArrayOutputStream(8192);
-		writeCppBegin(bout);
-		writeDefinition(bout, type);
+		writeCppBegin(bout, clazz);
+		writeDefinition(bout, clazz);
 		writeIfChanged(bout.toByteArray(), getFileObject(filename));
 	}
 	
@@ -323,11 +323,12 @@ public abstract class Gen {
 		pw.println();
 	}
 
-	private void writeCppBegin(OutputStream o) {
+	private void writeCppBegin(OutputStream o, TypeElement clazz) {
 		PrintWriter pw = wrapWriter(o);
 		pw.println(getFileTop());
 		if (pch != null)
 			pw.println("#include <" + pch + ">");
+		pw.println("#include \"" + baseFileName(clazz) + ".h\"");
 		pw.println();
 	}
 
