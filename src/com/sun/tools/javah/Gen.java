@@ -172,7 +172,7 @@ public abstract class Gen {
 	 * Generate the declaration for the given type and write it to a C++ header file.
 	 */
 	private void writeHeader(TypeElement type) throws IOException, ClassNotFoundException, Util.Exit {
-		String filename = baseFileName(type.getSimpleName()) + ".h";
+		String filename = baseFileName(type) + ".h";
 		ByteArrayOutputStream bout = new ByteArrayOutputStream(8192);
 		writeHeaderBegin(bout);
 		writeDeclaration(bout, type);
@@ -183,7 +183,7 @@ public abstract class Gen {
 	 * Generate the definition for the given type and write it to a C++ code file.
 	 */
 	private void writeCpp(TypeElement type) throws IOException, ClassNotFoundException, Util.Exit {
-		String filename = baseFileName(type.getSimpleName()) + ".cpp";
+		String filename = baseFileName(type) + ".cpp";
 		ByteArrayOutputStream bout = new ByteArrayOutputStream(8192);
 		writeCppBegin(bout);
 		writeDefinition(bout, type);
@@ -331,8 +331,8 @@ public abstract class Gen {
 		pw.println();
 	}
 
-	protected String baseFileName(CharSequence className) {
-		return mangler.mangle(className, Mangle.Type.CLASS);
+	protected String baseFileName(TypeElement clazz) {
+		return mangler.mangle(clazz.getSimpleName(), Mangle.Type.CLASS);
 	}
 
 	private FileObject getFileObject(String filename) throws IOException {

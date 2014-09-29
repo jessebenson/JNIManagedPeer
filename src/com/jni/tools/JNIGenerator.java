@@ -50,27 +50,15 @@ public class JNIGenerator extends Gen {
 	}
 
 	@Override
-	protected String baseFileName(CharSequence className) {
-		return super.baseFileName(className) + "ManagedPeer";
+	protected String baseFileName(TypeElement clazz) {
+		return super.baseFileName(clazz) + "ManagedPeer";
 	}
 	
 	@Override
 	public void writeDeclaration(OutputStream o, TypeElement clazz) throws Util.Exit {
 		try {
-			String cname = mangler.mangle(clazz.getQualifiedName(), Mangle.Type.CLASS);
+			String cname = baseFileName(clazz);
 			PrintWriter pw = wrapWriter(o);
-
-			/* Write statics. */
-			List<VariableElement> classfields = getAllFields(clazz);
-
-			for (VariableElement field : classfields) {
-				if (!field.getModifiers().contains(Modifier.STATIC))
-					continue;
-				String s = defineForStatic(clazz, field);
-				if (s != null) {
-					pw.println(s);
-				}
-			}
 
 			/* Write methods. */
 			List<ExecutableElement> classmethods = ElementFilter.methodsIn(clazz.getEnclosedElements());
