@@ -70,7 +70,8 @@ public class JNIGenerator extends Gen {
 		pw.println("class " + cname + " : public ::JNI::ManagedPeer");
 		pw.println("{");
 		pw.println("public:");
-		pw.println("\t" + cname + "(jobject object);");
+		pw.println("\t" + cname + "();");
+		pw.println("\t" + "explicit " + cname + "(jobject object);");
 		pw.println("\t~" + cname + "()");
 		pw.println();
 		pw.println("\t" + "static jclass GetClass();");
@@ -81,11 +82,12 @@ public class JNIGenerator extends Gen {
 		for (ExecutableElement method : classmethods) {
 			Annotation jniMethod = method.getAnnotation(JNIMethod.class);
 			if (jniMethod != null) {
+				String modifiers = (isStatic(method) ? "static " : "");
 				String returnType = getReturnType(method);
 				String methodName = getMethodName(method);
 				String argumentSignature = getArgumentsSignature(method, /*includeTypes:*/ true);
 				
-				pw.println("\t" + returnType + " " + methodName + "(" + argumentSignature + ");");
+				pw.println("\t" + modifiers + returnType + " " + methodName + "(" + argumentSignature + ");");
 			}
 		}
 
@@ -107,14 +109,20 @@ public class JNIGenerator extends Gen {
 			String[] namespace = getNamespace(clazz);
 			pw.println(cppNamespaceBegin(namespace));
 			pw.println();
-			
-			/* Constructor */
-			pw.println(cname + "::" + cname + "(jobject object)");
-			pw.println("\t" + ": JNI::ManagedPeer(object)");
+
+			/* Constructor with no Java object (for calling static-only class methods) */
+			pw.println(cname + "::" + cname + "()");
 			pw.println("{");
 			pw.println("}");
 			pw.println();
-			
+
+			/* Constructor with Java object */
+			pw.println(cname + "::" + cname + "(jobject object)");
+			pw.println("\t" + ": ::JNI::ManagedPeer(object)");
+			pw.println("{");
+			pw.println("}");
+			pw.println();
+
 			/* Destructor */
 			pw.println(cname + "::~" + cname + "()");
 			pw.println("{");
@@ -124,11 +132,11 @@ public class JNIGenerator extends Gen {
 			/* static GetClass method - uses a static "ref counted" JClass variable to read the Java class once */
 			pw.println("jclass " + cname + "::GetClass()");
 			pw.println("{");
-			pw.println("\t" + "static JNI::ManagedPeer::JClass clazz(\"" + typeSignature.getTypeSignature(clazz) + "\");");
+			pw.println("\t" + "static ::JNI::JClass clazz(\"" + typeSignature.getTypeSignature(clazz) + "\");");
 			pw.println("\t" + "return clazz;");
 			pw.println("}");
 			pw.println();
-			
+
 			/* Write definitions for methods marked with the JNIMethod annotation. */
 			List<ExecutableElement> classmethods = ElementFilter.methodsIn(clazz.getEnclosedElements());
 			for (ExecutableElement method : classmethods) {
@@ -137,20 +145,28 @@ public class JNIGenerator extends Gen {
 					String returnType = getReturnType(method);
 					String methodName = getMethodName(method);
 					String argumentSignature = getArgumentsSignature(method, /*includeTypes:*/ true);
-					
+
 					CharSequence methodSimpleName = method.getSimpleName();
 					String methodSignature = typeSignature.getTypeSignature(signature(method), types.erasure(method.getReturnType()));
-					
+
 					/* Method signature */
 					pw.println(returnType + " " + cname + "::" + methodName + "(" + argumentSignature + ")");
 					pw.println("{");
-					
+
 					/* Static variable to compute the jmethodID once on first use */
 					pw.println("\t" + "static jmethodID methodID(GetMethodID(GetClass(), \"" + methodSimpleName + "\", \"" + methodSignature + "\"));");
-					
+
 					/* Generate the code to call the Java method. */
 					pw.print("\t");
-					pw.print(getCallSignature(method) + "(methodID");
+					pw.print(getCallSignature(method));
+					pw.print("(");
+
+					/* If the method is not static, we need a Java instance to invoke */
+					if (!isStatic(method))
+						pw.print("Object(), ");
+					pw.print("methodID");
+
+					/* If the method has parameters, we need to forward the parameters */
 					String arguments = getArgumentsSignature(method, /*includeTypes:*/ false);
 					if (arguments != null && !arguments.isEmpty())
 						pw.print(", " + arguments);
@@ -202,6 +218,15 @@ public class JNIGenerator extends Gen {
 		return buffer.toString();
 	}
 
+	protected final boolean isVoid(ExecutableElement method) {
+		TypeMirror returnType = types.erasure(method.getReturnType());
+		return (returnType.getKind() == TypeKind.VOID);
+	}
+	
+	protected final boolean isStatic(ExecutableElement method) {
+		return method.getModifiers().contains(Modifier.STATIC);
+	}
+	
 	protected final String getReturnType(ExecutableElement method) {
 		TypeMirror returnType = types.erasure(method.getReturnType());
 		return jniType(returnType);
@@ -232,10 +257,7 @@ public class JNIGenerator extends Gen {
 	}
 	
 	private final String getCallSignature(ExecutableElement method, String baseSignature) {
-		if (method.getModifiers().contains(Modifier.STATIC))
-			return "CallStatic" + baseSignature + "Method";
-		else
-			return "Call" + baseSignature + "Method";
+		return String.format("Env().Call%s%sMethod", isStatic(method) ? "Static" : "", baseSignature);
 	}
 	
 	protected final String getCallSignature(ExecutableElement method) {
