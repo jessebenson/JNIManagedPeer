@@ -44,16 +44,21 @@ public class JNIGenerator extends Gen {
 		super(util);
 	}
 
+	@Override
 	public String getIncludes() {
 		return "#include <ManagedPeer.h>";
 	}
 
+	@Override
+	protected String baseFileName(CharSequence className) {
+		return super.baseFileName(className) + "ManagedPeer";
+	}
+	
+	@Override
 	public void writeDeclaration(OutputStream o, TypeElement clazz) throws Util.Exit {
 		try {
 			String cname = mangler.mangle(clazz.getQualifiedName(), Mangle.Type.CLASS);
 			PrintWriter pw = wrapWriter(o);
-			pw.println(guardBegin(cname));
-			pw.println(cppGuardBegin());
 
 			/* Write statics. */
 			List<VariableElement> classfields = getAllFields(clazz);
@@ -114,13 +119,12 @@ public class JNIGenerator extends Gen {
 					pw.println(");" + lineSeparator);
 				}
 			}
-			pw.println(cppGuardEnd());
-			pw.println(guardEnd(cname));
 		} catch (TypeSignature.SignatureException e) {
 			util.error("jni.sigerror", e.getMessage());
 		}
 	}
 
+	@Override
 	public void writeDefinition(OutputStream o, TypeElement clazz) throws Util.Exit {
 	}
 	

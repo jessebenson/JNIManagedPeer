@@ -140,7 +140,13 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 				task.odir = new File(arg);
 			}
 		},
-	
+
+		new Option(true, "-pch") {
+			void process(JNITask task, String opt, String arg) {
+				task.pch = arg;
+			}
+		},
+
 		new Option(false, "-v", "-verbose") {
 			void process(JNITask task, String opt, String arg) {
 				task.verbose = true;
@@ -403,6 +409,7 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 			}
 		}
 		generator.setFileManager(fileManager);
+		generator.setPrecompiledHeader(pch);
 
 		/*
 		 * Force set to false will turn off smarts about checking file content
@@ -569,6 +576,7 @@ public class JNITask implements NativeHeaderTool.NativeHeaderTask {
 	}
 
 	File odir;
+	String pch;
 	List<String> classes;
 	boolean verbose;
 	boolean noArgs;
