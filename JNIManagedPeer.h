@@ -27,16 +27,58 @@
 
 namespace JNI {
 
+	// Stores an auto ref-counted (global reference) jobject
+	struct JObject
+	{
+		explicit JObject(jobject object, bool releaseLocalRef = false);
+		JObject(const JObject& object);
+		JObject(JObject&& object);
+		~JObject();
+
+		JObject& operator=(const JObject& object);
+		JObject& operator=(JObject&& object);
+
+		jobject Object() const { return m_Object; }
+		operator jobject() const { return m_Object; }
+
+	private:
+		void AttachObject(jobject object);
+		void ReleaseObject();
+
+		jobject m_Object;
+	};
+
+
+	// Stores an auto ref-counted (global reference) jclass
+	struct JClass : public JObject
+	{
+		explicit JClass(const char* className);
+		JClass(const JClass& clazz) : JObject(clazz) { }
+		JClass(JClass&& clazz) : JObject(clazz) { }
+		~JClass();
+
+		JClass& operator=(const JClass& clazz)
+		{
+			JObject::operator=(clazz);
+			return *this;
+		}
+
+		JClass& operator=(JClass&& clazz)
+		{
+			JObject::operator=(clazz);
+			return *this;
+		}
+
+		operator jclass() const { return (jclass) Object(); }
+	};
+
+
 	// Base class for all auto-generated "managed peer" classes.
 	class ManagedPeer
 	{
 	public:
-		// Default constructor with no Java object when only needing to call static methods.
-		ManagedPeer();
-
 		// Constructor with a Java object to be able to invoke instance methods.
 		explicit ManagedPeer(jobject object);
-
 		~ManagedPeer();
 
 		jobject Object() const { return m_Object; }
@@ -45,20 +87,7 @@ namespace JNI {
 		static JNIEnv& Env();
 
 	private:
-		jobject m_Object;
-	};
-
-
-	// Helper class to store an auto ref-counted jclass
-	struct JClass
-	{
-		JClass(const char* className);
-		~JClass();
-
-		operator jclass() const { return m_Class; }
-
-	private:
-		jclass m_Class;
+		JObject m_Object;
 	};
 
 
