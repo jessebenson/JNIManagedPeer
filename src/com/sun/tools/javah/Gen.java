@@ -327,7 +327,7 @@ public abstract class Gen {
 		PrintWriter pw = wrapWriter(o);
 		pw.println(getFileTop());
 		if (pch != null)
-			pw.println("#include <" + pch + ">");
+			pw.println("#include \"" + pch + "\"");
 		pw.println("#include \"" + baseFileName(clazz) + ".h\"");
 		pw.println();
 	}
