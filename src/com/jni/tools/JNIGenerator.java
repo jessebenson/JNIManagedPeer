@@ -70,7 +70,6 @@ public class JNIGenerator extends Gen {
 		pw.println("class " + cname + " : public ::JNI::ManagedPeer");
 		pw.println("{");
 		pw.println("public:");
-		pw.println("\t" + cname + "();");
 		pw.println("\t" + "explicit " + cname + "(jobject object);");
 		pw.println("\t~" + cname + "()");
 		pw.println();
@@ -108,12 +107,6 @@ public class JNIGenerator extends Gen {
 			/* Get the desired namespace for this peer class */
 			String[] namespace = getNamespace(clazz);
 			pw.println(cppNamespaceBegin(namespace));
-			pw.println();
-
-			/* Constructor with no Java object (for calling static-only class methods) */
-			pw.println(cname + "::" + cname + "()");
-			pw.println("{");
-			pw.println("}");
 			pw.println();
 
 			/* Constructor with Java object */

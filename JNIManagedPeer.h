@@ -53,6 +53,7 @@ namespace JNI {
 	struct JClass : public JObject
 	{
 		explicit JClass(const char* className);
+		explicit JClass(jclass clazz) : JObject(clazz) { }
 		JClass(const JClass& clazz) : JObject(clazz) { }
 		JClass(JClass&& clazz) : JObject(clazz) { }
 		~JClass();
