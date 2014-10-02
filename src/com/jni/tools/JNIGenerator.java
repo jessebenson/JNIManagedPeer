@@ -71,7 +71,7 @@ public class JNIGenerator extends Gen {
 		pw.println("{");
 		pw.println("public:");
 		pw.println("\t" + "explicit " + cname + "(jobject object);");
-		pw.println("\t~" + cname + "()");
+		pw.println("\t~" + cname + "();");
 		pw.println();
 		pw.println("\t" + "static jclass GetClass();");
 		pw.println();
