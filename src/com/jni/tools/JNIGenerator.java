@@ -149,7 +149,7 @@ public class JNIGenerator extends Gen {
 					pw.println("{");
 
 					/* Static variable to compute the jmethodID once on first use */
-					pw.println("\t" + "static jmethodID methodID(Env().GetMethodID(GetClass(), \"" + methodSimpleName + "\", \"" + methodSignature + "\"));");
+					pw.println("\t" + "static jmethodID methodID(Env().Get" + (isStatic(method) ? "Static" : "") + "MethodID(GetClass(), \"" + methodSimpleName + "\", \"" + methodSignature + "\"));");
 
 					/* Generate the code to call the Java method. */
 					pw.print("\t");
@@ -157,7 +157,9 @@ public class JNIGenerator extends Gen {
 					pw.print("(");
 
 					/* If the method is not static, we need a Java instance to invoke */
-					if (!isStatic(method))
+					if (isStatic(method))
+						pw.print("GetClass(), ");
+					else
 						pw.print("Object(), ");
 					pw.print("methodID");
 
