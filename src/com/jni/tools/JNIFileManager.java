@@ -41,6 +41,6 @@ class JNIFileManager extends JavacFileManager {
 	}
 
 	void setIgnoreSymbolFile(boolean b) {
-		ignoreSymbolFile = b;
+		//ignoreSymbolFile = b;
 	}
 }

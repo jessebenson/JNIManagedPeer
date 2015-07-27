@@ -22,7 +22,7 @@ public class Main {
 
 	static {
 		// Set the JDK home to run this - required to get the Java compiler at runtime
-		System.setProperty("java.home", "C:\\Program Files\\Java\\jdk1.7.0_67");
+		System.setProperty("java.home", "C:\\Program Files\\Java\\jdk1.8.0_45");
 	}
 
 	public static void main(String[] args) {

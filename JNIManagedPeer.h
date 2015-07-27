@@ -27,73 +27,138 @@
 
 namespace JNI {
 
-	// Stores an auto ref-counted (global reference) jobject
-	struct JObject
-	{
-		explicit JObject(jobject object, bool releaseLocalRef = false);
-		JObject(const JObject& object);
-		JObject(JObject&& object);
-		~JObject();
+    // Stores an auto ref-counted (global reference) jobject
+    struct JObject
+    {
+        JObject();
+        JObject(jobject object, bool releaseLocalRef = false);
+        JObject(const JObject& object);
+        JObject(JObject&& object);
+        ~JObject();
 
-		JObject& operator=(const JObject& object);
-		JObject& operator=(JObject&& object);
+        JObject& operator=(jobject object);
+        JObject& operator=(const JObject& object);
+        JObject& operator=(JObject&& object);
 
-		jobject Object() const { return m_Object; }
-		operator jobject() const { return m_Object; }
+        jobject Object() const { return m_Object; }
+        operator jobject() const { return m_Object; }
 
-	private:
-		void AttachObject(jobject object);
-		void ReleaseObject();
+    protected:
+        void AttachObject(JNIEnv* env, jobject object);
+        void ReleaseObject(JNIEnv* env);
 
-		jobject m_Object;
-	};
+        void AttachLocalObject(JNIEnv* env, jobject object);
 
-
-	// Stores an auto ref-counted (global reference) jclass
-	struct JClass : public JObject
-	{
-		explicit JClass(const char* className);
-		explicit JClass(jclass clazz) : JObject(clazz) { }
-		JClass(const JClass& clazz) : JObject(clazz) { }
-		JClass(JClass&& clazz) : JObject(clazz) { }
-		~JClass();
-
-		JClass& operator=(const JClass& clazz)
-		{
-			JObject::operator=(clazz);
-			return *this;
-		}
-
-		JClass& operator=(JClass&& clazz)
-		{
-			JObject::operator=(clazz);
-			return *this;
-		}
-
-		operator jclass() const { return (jclass) Object(); }
-	};
+    private:
+        jobject m_Object = nullptr;
+    };
 
 
-	// Base class for all auto-generated "managed peer" classes.
-	class ManagedPeer
-	{
-	public:
-		// Constructor with a Java object to be able to invoke instance methods.
-		explicit ManagedPeer(jobject object);
-		~ManagedPeer();
+    // Stores an auto ref-counted (global reference) jclass
+    struct JClass : public JObject
+    {
+        explicit JClass(const char* className);
+        JClass(jclass clazz) : JObject(clazz) { }
+        JClass(const JClass& clazz) : JObject(clazz) { }
+        JClass(JClass&& clazz) : JObject(clazz) { }
+        ~JClass();
 
-		jobject Object() const { return m_Object; }
+        JClass& operator=(jclass clazz)
+        {
+            JObject::operator=(clazz);
+            return *this;
+        }
 
-		// Helper to get the JNI environment for invoking Java methods
-		static JNIEnv& Env();
+        JClass& operator=(const JClass& clazz)
+        {
+            JObject::operator=(clazz);
+            return *this;
+        }
 
-	private:
-		JObject m_Object;
-	};
+        JClass& operator=(JClass&& clazz)
+        {
+            JObject::operator=(clazz);
+            return *this;
+        }
+
+        operator jclass() const { return (jclass) Object(); }
+        jclass Class() const { return (jclass) Object(); }
+    };
 
 
-	// Store the Java virtual machine for general use.  Should be set in JNI_OnLoad.
-	static void SetJVM(JavaVM* jvm);
-	static JavaVM* GetJVM();
+    // Stores an auto ref-counted (global reference) jstring
+    class JString : public JObject
+    {
+    public:
+        JString(jstring string, bool removeLocalRef = false);
+        JString(const JString& string) : JObject(string) { }
+        JString(JString&& string) : JObject(string) { }
+        JString(const char* content);
+        JString(const wchar_t* content);
+        ~JString();
+
+        JString& operator=(jstring string)
+        {
+            Clear();
+            JObject::operator=(string);
+            return *this;
+        }
+
+        JString& operator=(const JString& string)
+        {
+            Clear();
+            JObject::operator=(string);
+            return *this;
+        }
+
+        JString& operator=(JString&& string)
+        {
+            Clear();
+            JObject::operator=(string);
+            return *this;
+        }
+
+        const char* GetUTFString() const;
+        int GetUTFLength() const;
+
+        const wchar_t* GetStringChars() const;
+        int GetLength() const;
+
+        operator jstring() const { return (jstring) Object(); };
+        jstring String() const { return (jstring) Object(); }
+
+    private:
+        void Clear();
+
+        const char* m_pString = nullptr;
+        const wchar_t* m_pWString = nullptr;
+    };
+
+
+    // Base class for all auto-generated "managed peer" classes.
+    class ManagedPeer
+    {
+    public:
+        // Constructor with a Java object to be able to invoke instance methods.
+        ManagedPeer();
+        explicit ManagedPeer(jobject object);
+        ~ManagedPeer();
+
+        ManagedPeer& operator=(jobject obj);
+
+        operator jobject () const { return m_Object; }
+        jobject Object() const { return m_Object; }
+
+        // Helper to get the JNI environment for invoking Java methods
+        static JNIEnv& Env();
+
+    private:
+        JObject m_Object;
+    };
+
+
+    // Store the Java virtual machine for general use.  Should be set in JNI_OnLoad.
+    void STDMETHODCALLTYPE SetJVM(JavaVM* jvm);
+    JavaVM* STDMETHODCALLTYPE GetJVM();
 
 } // namespace JNI
