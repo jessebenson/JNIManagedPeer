@@ -46,6 +46,11 @@ namespace JNI {
         return env;
     }
 
+    JNIEnv& STDMETHODCALLTYPE GetEnv()
+    {
+        return *GetEnvironment();
+    }
+
 
     JObject::JObject()
     {

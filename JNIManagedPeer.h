@@ -160,5 +160,6 @@ namespace JNI {
     // Store the Java virtual machine for general use.  Should be set in JNI_OnLoad.
     void STDMETHODCALLTYPE SetJVM(JavaVM* jvm);
     JavaVM* STDMETHODCALLTYPE GetJVM();
+    JNIEnv& STDMETHODCALLTYPE GetEnv();
 
 } // namespace JNI
